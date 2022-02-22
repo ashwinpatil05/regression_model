@@ -1,0 +1,101 @@
+version: 2
+
+defaults: &defaults
+  docker:
+    - image: circleci/python:3.9.5
+  working_directory: ~/project
+
+prepare_venv: &prepare_venv
+  run:
+    name: Create venv
+    command: |
+      python3 -m venv venv
+      source venv/bin/activate
+      pip install --upgrade pip
+
+prepare_tox: &prepare_tox
+  run:
+    name: Install tox
+    command: |
+      sudo pip install --upgrade pip
+      pip install --user tox
+
+fetch_data: &fetch_data
+  run:
+    name: Set script permissions and fetch data
+    command: |
+      source venv/bin/activate
+      chmod +x ./scripts/fetch_kaggle_dataset.sh
+      ./scripts/fetch_kaggle_dataset.sh
+
+jobs:
+  #This will train and test application.
+  train_and_test_regression_model:
+    <<: *defaults
+    working_directory: ~/project/
+    steps:
+      - checkout:
+          path: ~/project
+      - *prepare_tox
+      - run:
+          name: Fetch the data
+          command: |
+            tox -e fetch_data
+      - run:
+          name: Train model
+          command: |
+            tox -e train
+
+      - run:
+          name: Test the model
+          command: |
+            tox
+      - run:
+          name: Publish model to Gemfury
+          command: |
+            tox -e publish_model
+  
+  #This will train, Test and push the model to Gemfury
+  train_test_and_upload_regression_model:
+    <<: *defaults
+    working_directory: ~/project/
+    steps:
+      - checkout:
+          path: ~/project
+      - *prepare_tox
+      - run:
+          name: Fetch the data
+          command: |
+            tox -e fetch_data
+      - run:
+          name: Train model
+          command: |
+            tox -e train
+
+      - run:
+          name: Test the model
+          command: |
+            tox
+      - run:
+          name: Publish model to Gemfury
+          command: |
+            tox -e publish_model
+
+#creating tag func
+tags_only: &tags_only
+  filters:
+    branches:
+      ignore: /.*/
+    tags:
+      only: /^.*/
+
+#Workflow seetup
+workflows:
+  version: 2
+  section_07:
+    jobs:
+      - train_and_test_regression_model
+      - train_test_and_upload_regression_model:
+          <<: *tags_only
+
+
