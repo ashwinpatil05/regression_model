@@ -92,9 +92,12 @@ tags_only: &tags_only
 #Workflow seetup
 workflows:
   version: 2
-  section_07:
+  model_training:
     jobs:
       - train_and_test_regression_model
+
+  model_release:
+    jobs:
       - train_test_and_upload_regression_model:
           <<: *tags_only
 
