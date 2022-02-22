@@ -50,10 +50,7 @@ jobs:
           name: Test the model
           command: |
             tox
-      - run:
-          name: Publish model to Gemfury
-          command: |
-            tox -e publish_model
+
   
   #This will train, Test and push the model to Gemfury
   train_test_and_upload_regression_model:
